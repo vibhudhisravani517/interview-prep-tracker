@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}My Tasks – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Task Manager</h1>
+  <p>Track your personal study tasks and deadlines</p>
+</div>
+
+<div class="task-status-tabs">
+  <a href="{{ url_for('task_list') }}"
+     class="status-tab {{ 'active' if active_status == 'all' }}">
+    All <span class="tab-count">{{ counts.all }}</span>
+  </a>
+  <a href="{{ url_for('task_list', status='pending') }}"
+     class="status-tab {{ 'active' if active_status == 'pending' }}">
+    Pending <span class="tab-count">{{ counts.pending }}</span>
+  </a>
+  <a href="{{ url_for('task_list', status='in_progress') }}"
+     class="status-tab {{ 'active' if active_status == 'in_progress' }}">
+    In Progress <span class="tab-count">{{ counts.in_progress }}</span>
+  </a>
+  <a href="{{ url_for('task_list', status='completed') }}"
+     class="status-tab {{ 'active' if active_status == 'completed' }}">
+    Completed <span class="tab-count">{{ counts.completed }}</span>
+  </a>
+  <div class="tab-spacer"></div>
+  <div class="filter-group">
+    <label>Priority</label>
+    <select onchange="location='{{ url_for('task_list') }}?status={{ active_status }}&priority='+this.value">
+      <option value="all"   {{ 'selected' if active_priority=='all' }}>All</option>
+      <option value="high"  {{ 'selected' if active_priority=='high' }}>🔴 High</option>
+      <option value="medium"{{ 'selected' if active_priority=='medium' }}>🟡 Medium</option>
+      <option value="low"   {{ 'selected' if active_priority=='low' }}>🟢 Low</option>
+    </select>
+  </div>
+  <a href="{{ url_for('add_task') }}" class="btn-primary" style="text-decoration:none;padding:.45rem 1rem;font-size:.88rem;white-space:nowrap;">+ Add Task</a>
+</div>
+
+{% if tasks %}
+<div class="tasks-list">
+  {% for task in tasks %}
+  <div class="task-card {{ task.status }} {{ 'overdue' if task.is_overdue }}">
+    <div class="task-card-left">
+      <div class="task-status-dot status-{{ task.status }}"></div>
+    </div>
+    <div class="task-body">
+      <div class="task-title">{{ task.title }}</div>
+      {% if task.topic %}
+        <div class="task-topic">📌 {{ task.topic }}</div>
+      {% endif %}
+      <div class="task-meta">
+        {% if task.priority == 'high' %}
+          <span class="badge badge-high">🔴 High</span>
+        {% elif task.priority == 'medium' %}
+          <span class="badge badge-medium">🟡 Medium</span>
+        {% else %}
+          <span class="badge badge-low">🟢 Low</span>
+        {% endif %}
+
+        {% if task.status == 'pending' %}
+          <span class="badge badge-status-pending">Pending</span>
+        {% elif task.status == 'in_progress' %}
+          <span class="badge badge-status-progress">In Progress</span>
+        {% else %}
+          <span class="badge badge-status-done">Completed</span>
+        {% endif %}
+
+        {% if task.due_date %}
+          <span class="badge {{ 'badge-overdue' if task.is_overdue else 'badge-due' }}">
+            📅 {{ task.due_date.strftime('%b %d, %Y') }}
+            {% if task.is_overdue %} · Overdue{% endif %}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="task-actions">
+      <select class="status-select" data-task-id="{{ task.id }}">
+        <option value="pending"     {{ 'selected' if task.status=='pending' }}>Pending</option>
+        <option value="in_progress" {{ 'selected' if task.status=='in_progress' }}>In Progress</option>
+        <option value="completed"   {{ 'selected' if task.status=='completed' }}>Completed</option>
+      </select>
+      <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn-icon" title="Edit">✏️</a>
+      <form class="delete-form" method="post" action="{{ url_for('delete_task', task_id=task.id) }}">
+        <button type="submit" class="btn-icon delete" title="Delete">🗑️</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card">
+  <div class="empty-icon">📋</div>
+  <p>No tasks found. Add your first task to get started!</p>
+  <a href="{{ url_for('add_task') }}" class="btn-primary" style="display:inline-block;text-decoration:none;">+ Add Task</a>
+</div>
+{% endif %}
+{% endblock %}
