@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% block title %}My Notes – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>My Notes</h1>
+  <p>Write notes and attach photos for any preparation topic</p>
+</div>
+
+<!-- ── Compose panel ── -->
+<div class="card notes-compose-card">
+  <h2 class="notes-section-label">📝 Write a Note</h2>
+  <div class="notes-compose-row">
+
+    <!-- Left: topic picker -->
+    <div class="notes-compose-col-left">
+      <label class="form-label" for="compose-topic">Select Topic</label>
+      <select id="compose-topic" class="notes-select">
+        <option value="">— choose a topic —</option>
+        {% for cat in categories %}
+          {% set grp = all_topics | selectattr('category', 'equalto', cat.id) | list %}
+          {% if grp %}
+          <optgroup label="{{ cat.icon }} {{ cat.label }}">
+            {% for t in grp %}
+            <option value="{{ t.id }}">{{ t.title }}</option>
+            {% endfor %}
+          </optgroup>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Right: textarea + image upload -->
+    <div class="notes-compose-col-right">
+      <label class="form-label" for="compose-ta">Note Content</label>
+      <textarea id="compose-ta" class="notes-ta"
+                placeholder="Select a topic above, then type your notes here…"
+                disabled></textarea>
+
+      <!-- image upload zone -->
+      <div class="img-upload-zone" id="compose-upload-zone" style="display:none;">
+        <div class="img-upload-row">
+          <!-- Camera (mobile) -->
+          <label class="img-upload-btn" title="Take a photo">
+            📷 Camera
+            <input type="file" id="compose-camera" accept="image/*" capture="environment" style="display:none;">
+          </label>
+          <!-- Gallery / file picker -->
+          <label class="img-upload-btn" title="Upload from gallery or computer">
+            🖼️ Gallery
+            <input type="file" id="compose-gallery" accept="image/*" multiple style="display:none;">
+          </label>
+          <span class="img-upload-hint">JPG · PNG · GIF · WebP · max 12 MB each</span>
+        </div>
+        <!-- upload progress list -->
+        <div id="compose-upload-progress"></div>
+        <!-- existing/new thumbnails for selected topic -->
+        <div class="img-thumb-grid" id="compose-thumb-grid"></div>
+      </div>
+
+      <div class="notes-compose-actions">
+        <button id="compose-save-btn" class="btn-primary" onclick="composeNoteSave()" disabled>
+          Save Note
+        </button>
+        <span id="compose-status" class="notes-status-msg"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Saved notes ── -->
+<div class="notes-saved-header">
+  <h2 class="notes-saved-title">Saved Notes</h2>
+</div>
+
+{% if has_notes %}
+  {% for cat in categories %}
+    {% set items = notes_by_category[cat.id] %}
+    {% if items %}
+    <div class="notes-group">
+      <div class="notes-group-header">
+        <span class="cat-icon-wrap {{ cat.color }}" style="width:28px;height:28px;font-size:.85rem;flex-shrink:0;">{{ cat.icon }}</span>
+        <span class="notes-group-title">{{ cat.label }}</span>
+        <span class="notes-group-count">{{ items|length }} note{{ 's' if items|length != 1 }}</span>
+      </div>
+      <div class="notes-cards-grid">
+        {% for item in items %}
+        <div class="note-card" id="nc-{{ item.topic.id }}">
+
+          <div class="note-card-meta">
+            <span class="note-card-topic">{{ item.topic.title }}</span>
+            {% if item.note %}
+            <span class="note-card-date">{{ item.note.updated_at.strftime('%b %d, %Y') }}</span>
+            {% endif %}
+          </div>
+
+          <!-- text body -->
+          {% if item.note and item.note.content %}
+          <div class="note-card-body" id="ncb-{{ item.topic.id }}">{{ item.note.content }}</div>
+          {% else %}
+          <div class="note-card-body note-card-body-empty" id="ncb-{{ item.topic.id }}">No text yet.</div>
+          {% endif %}
+
+          <!-- image thumbnails -->
+          <div class="img-thumb-grid" id="card-imgs-{{ item.topic.id }}">
+            {% for img in item.images %}
+            <div class="img-thumb-wrap" id="imgw-{{ img.id }}">
+              <img src="{{ img.url }}" alt="{{ img.name }}" class="img-thumb"
+                   onclick="openLightbox('{{ img.url }}', '{{ img.name | e }}')">
+              <button class="img-thumb-del" title="Delete image"
+                      onclick="deleteImage({{ img.id }}, {{ item.topic.id }}, this)">✕</button>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- inline image upload for card -->
+          <div class="img-upload-row">
+            <label class="img-upload-btn img-upload-btn-sm" title="Take photo">
+              📷
+              <input type="file" accept="image/*" capture="environment" style="display:none;"
+                     onchange="uploadCardImage({{ item.topic.id }}, this)">
+            </label>
+            <label class="img-upload-btn img-upload-btn-sm" title="Upload from gallery">
+              🖼️
+              <input type="file" accept="image/*" multiple style="display:none;"
+                     onchange="uploadCardImages({{ item.topic.id }}, this)">
+            </label>
+            <span class="img-upload-hint">Add photo</span>
+          </div>
+
+          <!-- inline text edit -->
+          <div class="note-card-edit" id="nce-{{ item.topic.id }}" style="display:none;"
+               data-content="{{ item.note.content | e if item.note else '' }}">
+            <textarea class="notes-ta notes-ta-sm"
+                      id="nce-ta-{{ item.topic.id }}"></textarea>
+            <div class="note-card-edit-actions">
+              <button class="btn-primary" style="font-size:.82rem;padding:.32rem .85rem;"
+                      onclick="cardNoteSave({{ item.topic.id }}, this)">Save</button>
+              <button class="btn-secondary" style="font-size:.82rem;padding:.32rem .85rem;"
+                      onclick="cardNoteCancel({{ item.topic.id }})">Cancel</button>
+              <span class="notes-status-msg" id="nce-status-{{ item.topic.id }}"></span>
+            </div>
+          </div>
+
+          <div class="note-card-footer">
+            <button class="btn-secondary notes-btn-sm"
+                    onclick="cardNoteEdit({{ item.topic.id }})">✏️ Edit Text</button>
+            <form method="post"
+                  action="{{ url_for('delete_note', topic_id=item.topic.id) }}"
+                  style="display:inline;"
+                  onsubmit="return confirm('Delete this note and all its images?');">
+              <button type="submit" class="btn-secondary notes-btn-sm notes-btn-danger">
+                🗑️ Delete
+              </button>
+            </form>
+          </div>
+
+        </div><!-- /.note-card -->
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+{% else %}
+<div class="empty-state card">
+  <div class="empty-icon">📝</div>
+  <p>No notes yet — pick a topic above and start writing or attach a photo!</p>
+</div>
+{% endif %}
+
+<!-- ── Lightbox ── -->
+<div id="lightbox" class="lightbox" style="display:none;" onclick="closeLightbox()">
+  <div class="lightbox-inner" onclick="event.stopPropagation()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightbox-img" src="" alt="" class="lightbox-img">
+    <div id="lightbox-caption" class="lightbox-caption"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ── Compose panel ── */
+  var topicSel   = document.getElementById('compose-topic');
+  var composeTa  = document.getElementById('compose-ta');
+  var saveBtn    = document.getElementById('compose-save-btn');
+  var statusEl   = document.getElementById('compose-status');
+  var uploadZone = document.getElementById('compose-upload-zone');
+  var thumbGrid  = document.getElementById('compose-thumb-grid');
+
+  // track which topic images belong to in compose panel
+  var composeTopicId = null;
+
+  topicSel.addEventListener('change', function () {
+    var tid = topicSel.value;
+    composeTopicId = tid ? parseInt(tid, 10) : null;
+    if (!tid) {
+      composeTa.disabled = true;
+      composeTa.value = '';
+      saveBtn.disabled = true;
+      statusEl.textContent = '';
+      uploadZone.style.display = 'none';
+      thumbGrid.innerHTML = '';
+      return;
+    }
+    composeTa.disabled = false;
+    saveBtn.disabled = false;
+    statusEl.textContent = '';
+    composeTa.value = 'Loading…';
+    uploadZone.style.display = 'block';
+    thumbGrid.innerHTML = '';
+
+    fetch('/notes/get/' + tid)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        composeTa.value = d.content || '';
+        composeTa.focus();
+        (d.images || []).forEach(function (img) {
+          thumbGrid.appendChild(makeComposeThumbnail(img, parseInt(tid, 10)));
+        });
+      })
+      .catch(function () { composeTa.value = ''; });
+  });
+
+  /* camera / gallery inputs for compose */
+  ['compose-camera', 'compose-gallery'].forEach(function (id) {
+    var inp = document.getElementById(id);
+    if (inp) {
+      inp.addEventListener('change', function () {
+        if (!composeTopicId) return;
+        Array.from(inp.files).forEach(function (file) {
+          uploadImageFile(file, composeTopicId, function (img) {
+            thumbGrid.appendChild(makeComposeThumbnail(img, composeTopicId));
+          });
+        });
+        inp.value = '';
+      });
+    }
+  });
+
+  function makeComposeThumbnail(img, tid) {
+    var wrap = document.createElement('div');
+    wrap.className = 'img-thumb-wrap';
+    wrap.id = 'imgw-' + img.id;
+    var im = document.createElement('img');
+    im.src = img.url; im.alt = img.name || ''; im.className = 'img-thumb';
+    im.onclick = function () { openLightbox(img.url, img.name || ''); };
+    var del = document.createElement('button');
+    del.className = 'img-thumb-del'; del.textContent = '✕';
+    del.title = 'Delete image';
+    del.onclick = function () { deleteImage(img.id, tid, del); };
+    wrap.appendChild(im); wrap.appendChild(del);
+    return wrap;
+  }
+
+  window.composeNoteSave = function () {
+    var tid = topicSel.value;
+    if (!tid) return;
+    saveBtn.disabled = true;
+    statusEl.textContent = 'Saving…';
+    fetch('/notes/save/' + tid, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: composeTa.value })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      saveBtn.disabled = false;
+      statusEl.textContent = '✓ Saved at ' + d.updated_at;
+      setTimeout(function () { location.reload(); }, 900);
+    })
+    .catch(function () {
+      saveBtn.disabled = false;
+      statusEl.textContent = 'Error saving — try again.';
+    });
+  };
+
+  /* ── Card inline text edit ── */
+  window.cardNoteEdit = function (tid) {
+    var editDiv = document.getElementById('nce-' + tid);
+    var bodyDiv = document.getElementById('ncb-' + tid);
+    var ta = document.getElementById('nce-ta-' + tid);
+    if (!editDiv) return;
+    ta.value = editDiv.dataset.content || '';
+    bodyDiv.style.display = 'none';
+    editDiv.style.display = 'block';
+    ta.focus();
+  };
+  window.cardNoteCancel = function (tid) {
+    var editDiv = document.getElementById('nce-' + tid);
+    var bodyDiv = document.getElementById('ncb-' + tid);
+    if (editDiv) editDiv.style.display = 'none';
+    if (bodyDiv) bodyDiv.style.display = '';
+  };
+  window.cardNoteSave = function (tid, btn) {
+    var ta = document.getElementById('nce-ta-' + tid);
+    var msgEl = document.getElementById('nce-status-' + tid);
+    var bodyDiv = document.getElementById('ncb-' + tid);
+    var editDiv = document.getElementById('nce-' + tid);
+    if (!ta) return;
+    btn.disabled = true; msgEl.textContent = 'Saving…';
+    fetch('/notes/save/' + tid, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: ta.value })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function () {
+      btn.disabled = false;
+      editDiv.dataset.content = ta.value;
+      if (bodyDiv) {
+        bodyDiv.textContent = ta.value || 'No text yet.';
+        bodyDiv.classList.toggle('note-card-body-empty', !ta.value.trim());
+        bodyDiv.style.display = '';
+      }
+      editDiv.style.display = 'none';
+    })
+    .catch(function () { btn.disabled = false; msgEl.textContent = 'Error — try again.'; });
+  };
+
+  /* ── Image upload helpers ── */
+  function uploadImageFile(file, tid, onSuccess) {
+    var fd = new FormData();
+    fd.append('image', file);
+    var progress = document.getElementById('compose-upload-progress');
+    var row = document.createElement('div');
+    row.className = 'img-upload-progress-row';
+    row.textContent = '⏳ Uploading ' + file.name + '…';
+    if (progress) progress.appendChild(row);
+
+    fetch('/notes/upload/' + tid, { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (row.parentNode) row.parentNode.removeChild(row);
+        if (d.error) { alert(d.error); return; }
+        if (onSuccess) onSuccess(d);
+        // also update card thumb grid if it exists on the page
+        var cardGrid = document.getElementById('card-imgs-' + tid);
+        if (cardGrid) cardGrid.appendChild(makeCardThumbnail(d, tid));
+      })
+      .catch(function () {
+        if (row.parentNode) row.parentNode.removeChild(row);
+        alert('Upload failed — please try again.');
+      });
+  }
+
+  function makeCardThumbnail(img, tid) {
+    var wrap = document.createElement('div');
+    wrap.className = 'img-thumb-wrap'; wrap.id = 'imgw-' + img.id;
+    var im = document.createElement('img');
+    im.src = img.url; im.alt = img.name || ''; im.className = 'img-thumb';
+    im.onclick = function () { openLightbox(img.url, img.name || ''); };
+    var del = document.createElement('button');
+    del.className = 'img-thumb-del'; del.textContent = '✕'; del.title = 'Delete';
+    del.onclick = function () { deleteImage(img.id, tid, del); };
+    wrap.appendChild(im); wrap.appendChild(del);
+    return wrap;
+  }
+
+  /* card-level upload (single file) */
+  window.uploadCardImage = function (tid, inp) {
+    if (!inp.files.length) return;
+    uploadImageFile(inp.files[0], tid, function (img) {
+      var cardGrid = document.getElementById('card-imgs-' + tid);
+      if (cardGrid) cardGrid.appendChild(makeCardThumbnail(img, tid));
+    });
+    inp.value = '';
+  };
+  /* card-level upload (multiple) */
+  window.uploadCardImages = function (tid, inp) {
+    Array.from(inp.files).forEach(function (file) {
+      uploadImageFile(file, tid, null);
+    });
+    inp.value = '';
+  };
+
+  /* ── Delete image ── */
+  window.deleteImage = function (imgId, tid, btn) {
+    if (!confirm('Delete this image?')) return;
+    fetch('/notes/image/delete/' + imgId, { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.deleted) {
+          var wrap = document.getElementById('imgw-' + imgId);
+          if (wrap) wrap.remove();
+        }
+      })
+      .catch(function () { alert('Could not delete — try again.'); });
+  };
+
+  /* ── Lightbox ── */
+  window.openLightbox = function (url, caption) {
+    var lb = document.getElementById('lightbox');
+    document.getElementById('lightbox-img').src = url;
+    document.getElementById('lightbox-caption').textContent = caption;
+    lb.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeLightbox = function () {
+    document.getElementById('lightbox').style.display = 'none';
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+}());
+</script>
+{% endblock %}
