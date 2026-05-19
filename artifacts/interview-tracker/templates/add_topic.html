@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Add Topic – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Add New Topic</h1>
+  <p>Add a new preparation topic to your tracker</p>
+</div>
+
+<div class="card form-card">
+  <form method="post" action="{{ url_for('add_topic') }}">
+    <div class="form-group">
+      <label for="title">Topic Title *</label>
+      <input type="text" id="title" name="title" required placeholder="e.g. Binary Search Trees"
+             value="{{ form_data.get('title', '') }}">
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description (optional)</label>
+      <textarea id="description" name="description" placeholder="Add notes or details about this topic...">{{ form_data.get('description', '') }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="category">Category *</label>
+      <select id="category" name="category" required>
+        <option value="">Select a category</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}"
+          {{ 'selected' if (form_data.get('category') == cat.id or prefill_category == cat.id) }}>
+          {{ cat.icon }} {{ cat.label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="priority">Priority</label>
+      <select id="priority" name="priority">
+        <option value="high"   {{ 'selected' if form_data.get('priority') == 'high' }}>🔴 High</option>
+        <option value="medium" {{ 'selected' if form_data.get('priority', 'medium') == 'medium' }}>🟡 Medium</option>
+        <option value="low"    {{ 'selected' if form_data.get('priority') == 'low' }}>🟢 Low</option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">Add Topic</button>
+      <a href="{{ url_for('topics') }}" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
