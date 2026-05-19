@@ -1,6 +1,6 @@
 flask
 flask-sqlalchemy
 flask-login
-flask-wtf
-wtforms
-email-validator
+bcrypt
+gunicorn
+Werkzeug
