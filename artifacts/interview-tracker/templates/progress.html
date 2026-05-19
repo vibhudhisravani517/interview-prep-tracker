@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Progress – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Progress Tracker</h1>
+  <p>Detailed view of your preparation across all categories</p>
+</div>
+
+<div class="overall-banner">
+  <div class="banner-left">
+    <h2>Total Progress</h2>
+    <p>{{ stats.overall.completed }} of {{ stats.overall.total }} topics completed</p>
+  </div>
+  <div class="banner-right">
+    <div class="banner-pct">{{ stats.overall.percent }}%</div>
+    <div class="banner-sub">{{ stats.overall.pending }} still pending</div>
+  </div>
+  <div class="banner-progress">
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: {{ stats.overall.percent }}%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="progress-sections">
+  {% for cat in categories %}
+  {% set section = by_category[cat.id] %}
+  <div class="progress-section-card">
+    <div class="progress-section-header">
+      <div class="progress-section-title">
+        <span>{{ cat.icon }}</span>
+        <span>{{ cat.label }}</span>
+      </div>
+      <div class="progress-section-meta">
+        {{ section.stats.completed }}/{{ section.stats.total }} completed · {{ section.stats.percent }}%
+      </div>
+    </div>
+    <div class="progress-section-bar">
+      <div class="progress-bar">
+        <div class="progress-fill fill-{{ cat.color }}" style="width: {{ section.stats.percent }}%"></div>
+      </div>
+    </div>
+
+    {% if section.topics %}
+    <div class="topic-mini-list">
+      {% for topic in section.topics %}
+      <div class="topic-mini {{ 'done' if topic.completed }}">
+        <span class="mini-check">{{ '✅' if topic.completed else '⬜' }}</span>
+        <span class="mini-title">{{ topic.title }}</span>
+        {% if topic.priority == 'high' %}
+          <span class="badge badge-high" style="font-size:.7rem;">High</span>
+        {% elif topic.priority == 'medium' %}
+          <span class="badge badge-medium" style="font-size:.7rem;">Medium</span>
+        {% else %}
+          <span class="badge badge-low" style="font-size:.7rem;">Low</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:1.5rem;">
+      <p>No topics in this category yet. <a href="{{ url_for('add_topic', category=cat.id) }}">Add one →</a></p>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
