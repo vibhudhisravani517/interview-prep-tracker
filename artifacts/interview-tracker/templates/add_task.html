@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Add Task – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Add New Task</h1>
+  <p>Create a personal study task with a deadline and priority</p>
+</div>
+
+<div class="card form-card">
+  <form method="post" action="{{ url_for('add_task') }}">
+    <div class="form-group">
+      <label for="title">Task Title *</label>
+      <input type="text" id="title" name="title" required
+             placeholder="e.g. Solve 10 LeetCode medium problems"
+             value="{{ form_data.get('title', '') }}">
+    </div>
+
+    <div class="form-group">
+      <label for="topic">Related Topic (optional)</label>
+      <input type="text" id="topic" name="topic"
+             placeholder="e.g. Binary Trees, Dynamic Programming"
+             value="{{ form_data.get('topic', '') }}">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="due_date">Due Date (optional)</label>
+        <input type="date" id="due_date" name="due_date"
+               value="{{ form_data.get('due_date', '') }}">
+      </div>
+      <div class="form-group">
+        <label for="priority">Priority</label>
+        <select id="priority" name="priority">
+          <option value="high"   {{ 'selected' if form_data.get('priority')=='high' }}>🔴 High</option>
+          <option value="medium" {{ 'selected' if form_data.get('priority','medium')=='medium' }}>🟡 Medium</option>
+          <option value="low"    {{ 'selected' if form_data.get('priority')=='low' }}>🟢 Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% for s in statuses %}
+          <option value="{{ s.id }}" {{ 'selected' if form_data.get('status', 'pending')==s.id }}>{{ s.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">Add Task</button>
+      <a href="{{ url_for('task_list') }}" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
