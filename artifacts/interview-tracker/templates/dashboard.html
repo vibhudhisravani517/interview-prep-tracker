@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <p>Your interview preparation at a glance</p>
+</div>
+
+<div class="overall-banner">
+  <div class="banner-left">
+    <h2>Overall Progress</h2>
+    <p>{{ stats.overall.completed }} of {{ stats.overall.total }} topics completed</p>
+  </div>
+  <div class="banner-right">
+    <div class="banner-pct">{{ stats.overall.percent }}%</div>
+    <div class="banner-sub">{{ stats.overall.pending }} remaining</div>
+  </div>
+  <div class="banner-progress">
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: {{ stats.overall.percent }}%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="stats-grid">
+  {% for cat in categories %}
+  <a href="{{ url_for('topics', category=cat.id) }}" style="text-decoration:none;">
+    <div class="stat-card {{ cat.color }}">
+      <div class="stat-header">
+        <span class="stat-icon">{{ cat.icon }}</span>
+        <span class="stat-badge {{ cat.color }}">{{ cat.label }}</span>
+      </div>
+      <div class="stat-value">{{ stats[cat.id].percent }}%</div>
+      <div class="stat-label">Completion Rate</div>
+      <div class="progress-bar">
+        <div class="progress-fill fill-{{ cat.color }}" style="width: {{ stats[cat.id].percent }}%"></div>
+      </div>
+      <div class="stat-sub">{{ stats[cat.id].completed }} done · {{ stats[cat.id].pending }} pending</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="dashboard-grid">
+  <div class="card">
+    <div class="section-title">Category Breakdown</div>
+    <div class="cat-list">
+      {% for cat in categories %}
+      <div class="cat-row">
+        <div class="cat-icon-wrap {{ cat.color }}">{{ cat.icon }}</div>
+        <div class="cat-info">
+          <div class="cat-name">{{ cat.label }}</div>
+          <div class="progress-bar" style="margin-top:.35rem;">
+            <div class="progress-fill fill-{{ cat.color }}" style="width: {{ stats[cat.id].percent }}%"></div>
+          </div>
+          <div class="cat-sub">{{ stats[cat.id].completed }}/{{ stats[cat.id].total }} topics</div>
+        </div>
+        <div class="cat-pct">{{ stats[cat.id].percent }}%</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Recently Added Topics</div>
+    {% set cat_map = {} %}
+    {% for cat in categories %}{% set _ = cat_map.update({cat.id: cat}) %}{% endfor %}
+    {% if recent %}
+    <div class="recent-list">
+      {% for topic in recent %}
+      {% set cat = cat_map.get(topic.category, {'color':'blue','label':topic.category,'icon':'📌'}) %}
+      <div class="recent-item">
+        <div class="recent-dot {{ cat.color }}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="recent-title">{{ topic.title }}</div>
+          <div class="recent-cat">{{ cat.label }}</div>
+        </div>
+        {% if topic.completed %}<span class="recent-done">Done</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>No topics yet.</p>
+      <a href="{{ url_for('add_topic') }}" class="btn-primary" style="display:inline-block;text-decoration:none;">+ Add Topic</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+    <div class="section-title" style="margin:0;">Upcoming Tasks</div>
+    <a href="{{ url_for('task_list') }}" style="font-size:.82rem;color:var(--blue);text-decoration:none;font-weight:600;">View all →</a>
+  </div>
+  {% if upcoming_tasks %}
+  <div class="recent-list">
+    {% for task in upcoming_tasks %}
+    <div class="recent-item {{ 'overdue-item' if task.is_overdue }}">
+      <div class="task-status-dot status-{{ task.status }}" style="flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="recent-title">{{ task.title }}</div>
+        <div class="recent-cat">
+          {% if task.due_date %}
+            📅 {{ task.due_date.strftime('%b %d') }}{% if task.is_overdue %} · <span style="color:var(--red);">Overdue</span>{% endif %}
+          {% else %}
+            No due date
+          {% endif %}
+        </div>
+      </div>
+      {% if task.priority == 'high' %}
+        <span class="badge badge-high" style="font-size:.7rem;">High</span>
+      {% elif task.priority == 'medium' %}
+        <span class="badge badge-medium" style="font-size:.7rem;">Med</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:1.5rem 1rem;">
+    <div class="empty-icon">✅</div>
+    <p>No pending tasks. <a href="{{ url_for('add_task') }}">Add one →</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
