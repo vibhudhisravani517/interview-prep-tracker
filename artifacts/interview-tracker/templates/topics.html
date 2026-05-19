@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Topics – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+{% set cat_map = {} %}
+{% for cat in categories %}{% set _ = cat_map.update({cat.id: cat}) %}{% endfor %}
+
+<div class="page-header">
+  <h1>Topics</h1>
+  <p>Manage all your preparation topics</p>
+</div>
+
+<form method="get" action="{{ url_for('topics') }}" class="topics-toolbar">
+  <div class="filter-group">
+    <label>Category</label>
+    <select name="category" onchange="this.form.submit()">
+      <option value="all" {{ 'selected' if active_category == 'all' }}>All Categories</option>
+      {% for cat in categories %}
+      <option value="{{ cat.id }}" {{ 'selected' if active_category == cat.id }}>{{ cat.icon }} {{ cat.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Status</label>
+    <select name="status" onchange="this.form.submit()">
+      <option value="all"       {{ 'selected' if active_status == 'all' }}>All</option>
+      <option value="pending"   {{ 'selected' if active_status == 'pending' }}>Pending</option>
+      <option value="completed" {{ 'selected' if active_status == 'completed' }}>Completed</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Priority</label>
+    <select name="priority" onchange="this.form.submit()">
+      <option value="all"    {{ 'selected' if active_priority == 'all' }}>All</option>
+      <option value="high"   {{ 'selected' if active_priority == 'high' }}>🔴 High</option>
+      <option value="medium" {{ 'selected' if active_priority == 'medium' }}>🟡 Medium</option>
+      <option value="low"    {{ 'selected' if active_priority == 'low' }}>🟢 Low</option>
+    </select>
+  </div>
+  <span class="topics-count">{{ topics|length }} topic{{ 's' if topics|length != 1 }}</span>
+  <a href="{{ url_for('add_topic', category=active_category if active_category != 'all' else '') }}"
+     class="btn-primary" style="text-decoration:none;padding:.45rem 1rem;font-size:.88rem;">+ Add Topic</a>
+</form>
+
+{% if topics %}
+<div class="topics-list">
+  {% for topic in topics %}
+  {% set cat = cat_map.get(topic.category, {'color':'blue','label':topic.category,'icon':'📌'}) %}
+  {% set note = notes_map.get(topic.id) %}
+  <div class="topic-card {{ 'done' if topic.completed }}" id="topic-card-{{ topic.id }}">
+    <div class="topic-check">
+      <input type="checkbox" class="toggle-checkbox" data-topic-id="{{ topic.id }}" {{ 'checked' if topic.completed }}>
+    </div>
+    <div class="topic-body">
+      <div class="topic-title">{{ topic.title }}</div>
+      {% if topic.description %}<div class="topic-desc">{{ topic.description }}</div>{% endif %}
+      <div class="topic-meta">
+        <span class="badge badge-{{ cat.color }}">{{ cat.icon }} {{ cat.label }}</span>
+        {% if topic.priority == 'high' %}
+          <span class="badge badge-high">🔴 High</span>
+        {% elif topic.priority == 'medium' %}
+          <span class="badge badge-medium">🟡 Medium</span>
+        {% else %}
+          <span class="badge badge-low">🟢 Low</span>
+        {% endif %}
+        {% if topic.completed %}<span class="badge badge-done">✓ Completed</span>{% endif %}
+        {% if note and note.content %}
+          <span class="badge badge-note">📝 Note saved</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="topic-actions">
+      <button class="btn-icon note-toggle-btn"
+              data-topic-id="{{ topic.id }}"
+              title="Notes"
+              onclick="toggleNotePanel({{ topic.id }}, this)">📝</button>
+      <a href="{{ url_for('edit_topic', topic_id=topic.id) }}" class="btn-icon" title="Edit">✏️</a>
+      <form class="delete-form" method="post" action="{{ url_for('delete_topic', topic_id=topic.id) }}">
+        <button type="submit" class="btn-icon delete" title="Delete">🗑️</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="note-panel" id="note-panel-{{ topic.id }}" style="display:none;">
+    <div class="note-panel-inner">
+      <div class="note-panel-header">
+        <span class="note-panel-title">📝 Notes — {{ topic.title }}</span>
+        <span class="note-saved-msg" id="saved-msg-{{ topic.id }}"></span>
+      </div>
+      <textarea class="note-textarea" id="note-ta-{{ topic.id }}"
+                placeholder="Write your notes, key points, or revision tips here…"
+                data-topic-id="{{ topic.id }}">{{ note.content if note else '' }}</textarea>
+      <div class="note-panel-actions">
+        <button class="btn-primary" style="font-size:.82rem;padding:.38rem 1rem;"
+                onclick="saveNote({{ topic.id }}, this)">Save Note</button>
+        <button class="btn-secondary" style="font-size:.82rem;padding:.38rem .9rem;"
+                onclick="toggleNotePanel({{ topic.id }}, null)">Close</button>
+        {% if note and note.content %}
+          <span style="font-size:.75rem;color:var(--muted);">Last saved {{ note.updated_at.strftime('%b %d, %Y') }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card">
+  <div class="empty-icon">🔍</div>
+  <p>No topics found for the selected filters.</p>
+  <a href="{{ url_for('add_topic') }}" class="btn-primary" style="display:inline-block;text-decoration:none;">+ Add Topic</a>
+</div>
+{% endif %}
+{% endblock %}
