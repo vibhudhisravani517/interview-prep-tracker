@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Flask / SQLite
+instance/
+*.db
+*.sqlite3
+
+# User uploads
+artifacts/interview-tracker/static/uploads/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
