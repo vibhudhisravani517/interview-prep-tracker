@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel – Interview Prep Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>🛡️ Admin Panel</h1>
+  <p>Manage registered students and monitor their progress</p>
+</div>
+
+<div class="admin-summary-grid">
+  <div class="admin-stat-card">
+    <div class="admin-stat-icon">👥</div>
+    <div class="admin-stat-value">{{ student_data|length }}</div>
+    <div class="admin-stat-label">Total Students</div>
+  </div>
+  <div class="admin-stat-card">
+    <div class="admin-stat-icon">🛡️</div>
+    <div class="admin-stat-value">{{ admin_count }}</div>
+    <div class="admin-stat-label">Admin Accounts</div>
+  </div>
+  <div class="admin-stat-card">
+    <div class="admin-stat-icon">📚</div>
+    <div class="admin-stat-value">{{ topic_stats.overall.total }}</div>
+    <div class="admin-stat-label">Total Prep Topics</div>
+  </div>
+  <div class="admin-stat-card">
+    <div class="admin-stat-icon">✅</div>
+    <div class="admin-stat-value">{{ topic_stats.overall.percent }}%</div>
+    <div class="admin-stat-label">Overall Completion</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="section-title" style="margin-bottom:1rem;">Preparation Topic Progress (All Students)</div>
+  <div class="cat-list">
+    {% for cat in categories %}
+    <div class="cat-row">
+      <div class="cat-icon-wrap {{ cat.color }}">{{ cat.icon }}</div>
+      <div class="cat-info">
+        <div class="cat-name">{{ cat.label }}</div>
+        <div class="progress-bar" style="margin-top:.35rem;">
+          <div class="progress-fill fill-{{ cat.color }}" style="width: {{ topic_stats[cat.id].percent }}%"></div>
+        </div>
+        <div class="cat-sub">{{ topic_stats[cat.id].completed }}/{{ topic_stats[cat.id].total }} topics completed</div>
+      </div>
+      <div class="cat-pct">{{ topic_stats[cat.id].percent }}%</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="section-title" style="margin-bottom:.75rem;">Registered Students ({{ student_data|length }})</div>
+
+{% if student_data %}
+<div class="student-grid">
+  {% for row in student_data %}
+  <div class="student-card">
+    <div class="student-card-header">
+      <div class="student-avatar">{{ row.user.email[0].upper() }}</div>
+      <div class="student-info">
+        <div class="student-email">{{ row.user.email }}</div>
+        <div class="student-joined">Joined {{ row.user.created_at.strftime('%b %d, %Y') }}</div>
+      </div>
+      <span class="role-badge role-student">student</span>
+    </div>
+
+    <div class="student-tasks">
+      <div class="student-task-row">
+        <span class="student-task-label">My Tasks</span>
+        <span class="student-task-val">{{ row.task_done }}/{{ row.task_total }} done</span>
+      </div>
+      <div class="progress-bar" style="margin-top:.4rem;">
+        <div class="progress-fill fill-blue" style="width:{{ row.task_pct }}%"></div>
+      </div>
+    </div>
+
+    <div class="student-card-footer">
+      <form class="delete-form" method="post"
+            action="{{ url_for('admin_delete_user', user_id=row.user.id) }}">
+        <button type="submit" class="btn-delete-student">
+          🗑️ Delete Account
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card">
+  <div class="empty-icon">👤</div>
+  <p>No student accounts registered yet.</p>
+</div>
+{% endif %}
+{% endblock %}
