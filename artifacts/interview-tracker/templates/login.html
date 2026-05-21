@@ -3,83 +3,46 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login · PrepTracker</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
-  <style>
-    body {
-      background: #f0f4ff;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Segoe UI', sans-serif;
+  <title>Login - Interview Prep Tracker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="auth-body">
+  <div class="auth-card">
+    <div class="auth-logo">🎯</div>
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-subtitle">Sign in to your account</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="/login">
+      <div class="form-group">
+        <label>Email address</label>
+        <input type="email" name="email" class="form-control" placeholder="you@example.com" required/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div style="position:relative">
+          <input type="password" name="password" id="password" class="form-control" placeholder="Your password" required/>
+          <button type="button" onclick="togglePassword()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;">👁️</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Sign In</button>
+    </form>
+
+    <p class="auth-link">Don't have an account? <a href="/register">Create one</a></p>
+  </div>
+
+  <script>
+    function togglePassword() {
+      var pwd = document.getElementById('password');
+      pwd.type = pwd.type === 'password' ? 'text' : 'password';
     }
-    .auth-card {
-      background: white;
-      border-radius: 16px;
-      padding: 40px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-    }
-    .auth-logo {
-      font-size: 40px;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    .auth-title {
-      text-align: center;
-      font-size: 24px;
-      font-weight: 700;
-      color: #1a1a2e;
-    }
-    .auth-subtitle {
-      text-align: center;
-      color: #6b7280;
-      margin-bottom: 24px;
-      font-size: 14px;
-    }
-    .form-label {
-      font-weight: 600;
-      font-size: 13px;
-      color: #374151;
-    }
-    .form-control {
-      border-radius: 10px;
-      border: 1.5px solid #e5e7eb;
-      padding: 11px 14px;
-      font-size: 14px;
-    }
-    .form-control:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-    }
-    .password-wrap {
-      position: relative;
-    }
-    .password-wrap .form-control {
-      padding-right: 45px;
-    }
-    .toggle-password {
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: #9ca3af;
-      cursor: pointer;
-      font-size: 16px;
-      padding: 0;
-    }
-    .toggle-password:hover { color: #6366f1; }
-    .btn-primary {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      border: none;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      width: 100%;
-      color: white;
+  </script>
+</body>
+  </html>
